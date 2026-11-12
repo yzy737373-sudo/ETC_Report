@@ -4,8 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; connect-src 'none'; font-src 'self' data:; worker-src blob:;">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://cdnjs.cloudflare.com; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; connect-src 'none'; font-src 'self' data:; worker-src blob:;">
 <link rel="icon" href="data:,">
+<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
 <title>园区三因子通行与ETC状态可视化演示</title>
 <style>
 :root{--ink:#152c3c;--sub:#687a84;--line:#d8e0e4;--paper:#f7f8f7;--blue:#286987;--teal:#137d73;--gold:#c58c38;--red:#b84740}
@@ -48,7 +49,7 @@
 <div class="emptyerror" id="error"><h2>三维场景暂时无法显示</h2><p>请用支持 WebGL 的 Chrome 或 Edge 浏览器打开此文件，并启用浏览器的图形加速。文件本身不需要联网。</p><button id="error-photo">查看现场照片</button><p id="error-detail" style="font-size:11px"></p></div>
 <div class="gallery" id="gallery" role="dialog" aria-modal="true" aria-label="现场实拍对照"><div class="gallerytop"><h2>现场实拍对照</h2><button id="close-gallery">关闭 ×</button></div><figure><img id="gallery-image" alt="现场实拍照片"></figure><div class="thumbs" id="photo-thumbs"></div><p class="sourcecaption">用户提供的现场照片 · 用于核对外观及设备空间关系</p></div>
 <div class="toast" id="toast" role="status"></div>
-<script src="assets/scene-library.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.1/three.min.js" crossorigin="anonymous" defer></script>
 <script src="assets/scene-assets.js" defer></script>
 <script src="assets/scene-app.js" defer></script>
 </body>
