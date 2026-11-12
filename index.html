@@ -63,12 +63,13 @@ const state={chapter:0,playing:false,time:0,scenario:'normal',factors:{face:true
 const names=['现场全景','三因子通行','ETC现状','三色灯改造'];
 const durations=[8,27,19,25];
 const cases={
-  normal:{name:'正常通信',power:true,network:true,signal:'strong',tag:true,interaction:true,detail:'供电与网络正常，检测到车载标签，ETC交互完成。'},
-  network:{name:'网络未连通',power:true,network:false,signal:'strong',tag:true,interaction:false,detail:'本例模拟设备有电、标签信号可接收，但网络未连通。'},
-  noTag:{name:'未检测到标签',power:true,network:true,signal:'none',tag:false,interaction:false,detail:'本例模拟供电与网络正常，但尚未检测到车载标签。'},
-  weak:{name:'接收信号偏弱',power:true,network:true,signal:'weak',tag:true,interaction:false,detail:'本例模拟已经检测到标签，但接收信号偏弱，交互未完成。'},
-  pending:{name:'交互未完成',power:true,network:true,signal:'strong',tag:true,interaction:false,detail:'本例模拟供电、网络和接收信号正常，但ETC交互结果仍需核查。'},
-  off:{name:'设备未供电',power:false,network:false,signal:'none',tag:false,interaction:false,detail:'本例模拟设备未供电，各功能均未进入工作状态。'}
+  normal:{name:'正常通信',power:true,network:'strong',signal:'strong',tag:true,interaction:true,detail:'供电与网络正常，检测到车载标签，ETC交互完成。'},
+  network:{name:'网络未连通',power:true,network:'none',signal:'strong',tag:true,interaction:false,detail:'本例模拟设备有电、标签信号可接收，但网络未连通，对应指示灯熄灭。'},
+  networkWeak:{name:'网络连接弱',power:true,network:'weak',signal:'strong',tag:true,interaction:false,detail:'本例模拟设备有电且可接收标签信号，但网络连接较弱，对应蓝色指示灯闪烁。'},
+  noTag:{name:'未检测到标签',power:true,network:'strong',signal:'none',tag:false,interaction:false,detail:'本例模拟供电与网络正常，但尚未检测到车载标签。'},
+  weak:{name:'接收信号偏弱',power:true,network:'strong',signal:'weak',tag:true,interaction:false,detail:'本例模拟已经检测到标签，但接收信号偏弱，交互未完成。'},
+  pending:{name:'交互未完成',power:true,network:'strong',signal:'none',tag:true,interaction:false,detail:'本例模拟供电与网络正常，但ETC交互未完成，对应黄色接收信号灯熄灭。'},
+  off:{name:'设备故障断电',power:false,network:'none',signal:'none',tag:false,interaction:false,detail:'本例模拟设备故障并断电，各功能均未进入工作状态，指示灯熄灭。'}
 };
 let renderer,scene,camera,root,antenna,vehicle,leftGate,rightGate,wheels=[],lamps=[],pcb,cover;
 let width=1,height=1,elapsed=0,previous=performance.now(),cameraTween=null,drag=null,renderCount=0;
@@ -398,7 +399,7 @@ function renderPanel(){
  if(state.chapter===0){html=`<div class="kicker">现场空间与设备</div><h2>同一入口，三项联合核验</h2><p>以照片中的来车方向进入。人脸、车牌和ETC必须全部匹配成功，系统才允许道闸开启。</p>${factorRows()}<div class="rule">点击场景中的标注，可以走近设备观察；也可以直接开始完整的进门演示。</div><button class="mainbutton" data-action="start">开始进门演示 →</button><p class="smallnote">场景按照片参照建模，尺寸为近似比例；未覆盖的建筑细节作了简化。</p>`;}
  if(state.chapter===1){html=`<div class="kicker">三个结果 · 一个放行条件</div><h2>三因子全部通过才开闸</h2><p>演示车辆驶近入口，逐项显示核验结果；任何一项未通过，道闸保持关闭。</p><div id="factor-rows">${factorRows(currentFactorStatuses())}</div><div class="logic-result" id="logic-result">等待车辆进入核验位置</div><details class="factor-testing"><summary>演示某一因子不通过</summary><div class="factor-switches">${[['face','人脸'],['plate','车牌'],['etc','ETC']].map(([key,n])=>`<button data-toggle="${key}" class="${state.factors[key]?'':'bad'}" aria-pressed="${state.factors[key]}">${n}${state.factors[key]?' ✓':' ×'}</button>`).join('')}</div></details><button class="mainbutton secondary" data-action="focus-etc">拉近看ETC现状 →</button><p class="smallnote">为便于讲解，核验结果分步展示；该顺序不代表实际系统的采集时序。车牌、人员与通行事件均为演示内容。</p>`;}
  if(state.chapter===2){html=`<div class="kicker">现有成品设备 · 外观观察</div><h2>状态不同，外观看起来相同</h2><p>没有本地状态指示灯时，现场人员仅看天线外观，难以直观判断联网、标签检测和交互结果。</p>${casesHTML()}<div class="status-note" id="case-description">${cases[state.scenario].detail}</div><div class="rule">观察天线正面：切换模拟状态，外观不会给出对应提示，仍需结合后台信息核查。</div><button class="mainbutton" data-action="upgrade">查看三色灯改造 →</button><p class="smallnote">这些是用于解释需求的模拟工况，并非试点故障记录。</p>`;}
- if(state.chapter===3){html=`<div class="kicker">拟改造效果 · 自主电路模块</div><h2>让关键设备状态看得见</h2><p>在现有天线外壳增加三色灯，分别提示供电、网络连接与接收信号强度。</p>${casesHTML()}${lampRows()}<div class="status-note" id="case-description">${cases[state.scenario].detail}</div><button class="mainbutton secondary" data-action="explode">${state.exploded?'合上外壳':'查看模块结构示意'}</button><p class="smallnote" id="lamp-definition">绿＝电源，蓝＝网络，黄＝信号。常亮表示正常；闪烁提示网络异常或信号弱；熄灭表示未供电或未检出。</p><p class="smallnote">灯态和结构为方案示意，不替代交互结果及完整授权核查。</p>`;}
+ if(state.chapter===3){html=`<div class="kicker">拟改造效果 · 自主电路模块</div><h2>让关键设备状态看得见</h2><p>在现有天线外壳增加三色灯，分别提示供电、网络连接与接收信号状态。</p>${casesHTML()}${lampRows()}<div class="status-note" id="case-description">${cases[state.scenario].detail}</div><button class="mainbutton secondary" data-action="explode">${state.exploded?'合上外壳':'查看模块结构示意'}</button><p class="smallnote" id="lamp-definition">绿＝电源，蓝＝网络，黄＝接收信号。常亮表示正常；蓝灯闪烁表示网络连接弱，黄灯闪烁表示信号偏弱；网络未连通、交互未完成或设备故障断电时，相应指示灯熄灭。</p><p class="smallnote">灯态和结构为方案示意，不替代完整授权核查。</p>`;}
  $('panel').innerHTML=html;
  if(testingOpen&&$('panel').querySelector('.factor-testing'))$('panel').querySelector('.factor-testing').open=true;
  $('panel').querySelectorAll('[data-action]').forEach(b=>b.addEventListener('click',()=>action(b.dataset.action)));
@@ -424,7 +425,7 @@ function updateUI(){
  document.querySelectorAll('.track i span').forEach((el,i)=>el.style.width=(i<state.chapter?100:i===state.chapter?clamp(state.time/durations[i]*100,0,100):0)+'%');
  updateLampsUI();document.body.dataset.chapter=String(state.chapter);document.body.dataset.scenario=state.scenario;document.body.dataset.gate=Object.values(state.factors).every(Boolean)&&state.chapter===1&&state.time>=14?'allowed':'closed';
 }
-function lampValues(){const c=cases[state.scenario];return [{on:c.power,blink:false,text:c.power?'供电正常':'未供电'},{on:c.power,blink:c.power&&!c.network,text:!c.power?'未工作':c.network?'连接正常':'未连通 · 闪烁'},{on:c.power&&c.signal!=='none',blink:c.power&&c.signal==='weak',text:!c.power?'未工作':c.signal==='none'?'未检出信号':c.signal==='weak'?'偏弱 · 闪烁':'信号正常'}];}
+function lampValues(){const c=cases[state.scenario];return [{on:c.power,blink:false,text:c.power?'供电正常':'故障断电 · 熄灭'},{on:c.power&&c.network!=='none',blink:c.power&&c.network==='weak',text:!c.power?'未工作':c.network==='none'?'未连通 · 熄灭':c.network==='weak'?'连接弱 · 闪烁':'连接正常'},{on:c.power&&c.signal!=='none',blink:c.power&&c.signal==='weak',text:!c.power?'未工作':c.signal==='none'?(c.tag?'交互未完成 · 熄灭':'未检出信号 · 熄灭'):c.signal==='weak'?'偏弱 · 闪烁':'信号正常'}];}
 function updateLampsUI(){const values=lampValues();document.querySelectorAll('[data-lamp]').forEach(el=>{const s=values[Number(el.dataset.lamp)];el.dataset.on=String(s.on);el.dataset.blink=String(s.blink);el.querySelector('span:last-child').textContent=s.text;});}
 function caption(title,text){const el=$('step-caption');el.hidden=false;el.innerHTML=`<strong>${title}</strong>${text}`;}
 function updateSimulation(dt){
@@ -441,9 +442,9 @@ function updateSimulation(dt){
    else if(t<18)caption('全部通过 · 允许开闸','人脸、车牌和ETC三个匹配结果全部通过，开启道闸。');
    else caption('车辆进入园区','道闸放行依据是三因子联合核验结果。');
  }else if(state.chapter>=2){
-   if(state.playing){const sequence=['normal','network','noTag','weak','pending','off'];const i=Math.min(5,Math.floor(state.time/(durations[state.chapter]/6)));if(state.scenario!==sequence[i]){state.scenario=sequence[i];renderPanel();}}
+   if(state.playing){const sequence=['normal','network','networkWeak','noTag','weak','pending','off'];const i=Math.min(sequence.length-1,Math.floor(state.time/(durations[state.chapter]/sequence.length)));if(state.scenario!==sequence[i]){state.scenario=sequence[i];renderPanel();}}
    if(state.chapter===2)caption('现有设备 · 无本地状态指示',`当前模拟：${cases[state.scenario].name}。设备外观不能直接给出对应状态提示。`);
-   else caption(state.exploded?'新增电路模块 · 结构示意':'拟改造效果 · 三色灯状态提示',state.exploded?'新增板卡位置和元件仅用于表达方案，实际电路与装配需研发验证。':state.scenario==='pending'?'三灯正常仍不等于交互已完成；交互结果与授权判定需由系统核查。':'电源、网络与接收信号各有对应提示，为现场判断提供线索。');
+   else caption(state.exploded?'新增电路模块 · 结构示意':'拟改造效果 · 三色灯状态提示',state.exploded?'新增板卡位置和元件仅用于表达方案，实际电路与装配需研发验证。':state.scenario==='pending'?'交互未完成时，对应接收信号灯熄灭；完整授权判定仍需由系统核查。':state.scenario==='networkWeak'?'网络连接较弱时，蓝色网络指示灯闪烁。':'电源、网络与接收信号各有对应提示，为现场判断提供线索。');
  }
  if(vehicle){vehicle.position.z=carZ;vehicle.visible=state.chapter===1;}
  if(leftGate){leftGate.rotation.z=gateAngle;rightGate.rotation.z=-gateAngle;}
@@ -459,7 +460,7 @@ function updateCamera(dt){if(cameraTween){const t=cameraTween;const progress=cla
 function makeLabels(){
  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.classList.add('leaders');$('annotations').appendChild(svg);
  for(const def of labelDefs){const button=document.createElement('button');button.className='device-label';button.innerHTML=`<em>${def.id==='antenna'?'改造对象':'设备'}</em>${def.title}`;button.setAttribute('aria-label','查看'+def.title);button.addEventListener('click',()=>selectDevice(def.id));$('annotations').appendChild(button);const leader=document.createElementNS('http://www.w3.org/2000/svg','line');leader.setAttribute('stroke','#6e919f');leader.setAttribute('stroke-width','1');svg.appendChild(leader);const dot=document.createElementNS('http://www.w3.org/2000/svg','circle');dot.setAttribute('r','2.5');dot.setAttribute('fill','#4e7d93');svg.appendChild(dot);labels.push({...def,button,leader,dot});}
- ['电源','网络连接','接收信号强度'].forEach((name,i)=>{const button=document.createElement('button');button.className='device-label led';button.innerHTML=name+'<small>拟新增</small>';button.addEventListener('click',()=>toast(['电源：有电时常亮，断电时熄灭（演示定义）','网络：连接正常时常亮，未连通时闪烁（演示定义）','信号：正常时常亮，偏弱时闪烁，未检出时熄灭（演示定义）'][i]));$('annotations').appendChild(button);labels.push({id:'lamp'+i,kind:'led',i,button});});
+ ['电源','网络连接','接收信号'].forEach((name,i)=>{const button=document.createElement('button');button.className='device-label led';button.innerHTML=name+'<small>拟新增</small>';button.addEventListener('click',()=>toast(['电源：有电时常亮，故障断电时熄灭（演示定义）','网络：连接正常时常亮，连接弱时闪烁，未连通时熄灭（演示定义）','信号：正常时常亮，偏弱时闪烁，未检出或交互未完成时熄灭（演示定义）'][i]));$('annotations').appendChild(button);labels.push({id:'lamp'+i,kind:'led',i,button});});
 }
 function updateLabels(){
  for(const l of labels){let show=state.labels;if(l.kind==='led'){show=show&&state.chapter===3&&!state.exploded;}else{show=show&&state.chapter<=1;}
